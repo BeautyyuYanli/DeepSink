@@ -194,5 +194,44 @@ def sample(
     asyncio.run(_async_sample())
 
 
+@app.command()
+def to_csv(
+    repo_name: str,
+    output_path: str = typer.Argument(..., help="Path to save the CSV file"),
+):
+    """
+    Download dataset from Hugging Face Hub and save it as a CSV file.
+    Combines 'think' and 'content' into a formatted 'output' column.
+    """
+    try:
+        dataset: Dataset = load_dataset(repo_name)["train"]  # type: ignore
+
+        # Transform the dataset to create the new output column
+        def format_output(example):
+            return {
+                "topic": example["topic"],
+                "output": f"<think>\n{example['think']}\n</think>\n\n{example['content']}",
+            }
+
+        dataset = dataset.map(format_output)
+        dataset = dataset.select_columns(["topic", "output"])
+
+        # Ensure the output directory exists
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+        # Convert to CSV
+        dataset.to_csv(output_path, index=False)
+
+        console = Console()
+        console.print(
+            f"\nDataset successfully saved to: {output_path}", style="bold green"
+        )
+        console.print(f"Total entries saved: {len(dataset)}", style="bold green")
+
+    except Exception as e:
+        console = Console()
+        console.print(f"Error converting dataset to CSV: {str(e)}", style="bold red")
+
+
 if __name__ == "__main__":
     app()
