@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "yanli", email = "mail@yanli.one"},
 ]
-dependencies = ["huggingface-hub>=0.28.1", "datasets>=3.2.0", "pandas>=2.2.3", "typer>=0.15.1", "openai>=1.61.0"]
+dependencies = ["huggingface-hub>=0.28.1", "datasets>=3.2.0", "pandas>=2.2.3", "typer>=0.15.1", "openai>=1.61.0", "transformers>=4.48.2", "unsloth>=2025.1.8", "torch>=2.6.0"]
 requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "MIT"}
