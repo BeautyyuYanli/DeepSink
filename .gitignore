@@ -1,4 +1,5 @@
 output/
+output_model/
 output.csv
 # Byte-compiled / optimized / DLL files
 __pycache__/
