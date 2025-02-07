@@ -78,7 +78,7 @@ prompt0 = f"""
 """.strip()
 
 prompt_ins = """
-参考写作指南和例文，依据要求，写一篇爆仓文学。注意，作品中的具体数值、时间、金额等细节不得与例文相同，情节设计不得与指南相同，必须增加指南中未有举例的元素，主题可以是任意投资产品，也可以是加密货币，减少使用修辞手法。
+参考写作指南和例文，依据要求，写一篇爆仓文学。注意，作品中的具体数值、时间、金额等细节不得与例文相同，用语修辞等也不可与例文相同，情节设计不得与指南相同，必须增加指南中未有举例的元素，主题可以是任意投资产品，也可以是加密货币。结局必须是悲苦的，而不是励志的。
 输出格式如下：
 ```
 <Topic>
@@ -230,7 +230,11 @@ def get_response(
                 print("-" * 100)
         try:
             content = (
-                chunk.choices[0].delta.model_extra["reasoning"]  # type: ignore
+                (
+                    chunk.choices[0].delta.model_extra.get("reasoning", "")
+                    if chunk.choices[0].delta.model_extra
+                    else ""
+                )
                 if not chunk.choices[0].delta.content
                 else chunk.choices[0].delta.content
             )
@@ -246,9 +250,7 @@ def get_response(
     return thinking.strip(), answer.strip()
 
 
-async def aget_response(
-    prompt: str, model: str = "deepseek/deepseek-r1"
-) -> tuple[str, str]:
+async def aget_response(prompt: str, model: str) -> tuple[str, str]:
     client = AsyncOpenAI()
     response = await client.chat.completions.create(
         model=model,
@@ -273,12 +275,17 @@ async def aget_response(
     )
 
 
-async def clone_article() -> tuple[str, str]:
-    _thinking, answer = await aget_response(prompt=prompt2)
+async def clone_article(
+    model: str,
+    prompt: str = prompt2,
+) -> tuple[str, str]:
+    _thinking, answer = await aget_response(prompt=prompt, model=model)
 
     # Extract topic and content using regex
     topic_match = re.search(r"<Topic>\s*(.*?)\s*</Topic>", answer, re.DOTALL)
-    content_match = re.search(r"<Content>\s*(.*?)\s*</Content>", answer, re.DOTALL)
+
+    # Enhanced content matching - look for everything after <Content> tag
+    content_match = re.search(r"<Content>\s*(.*?)(?:</Content>|\Z)", answer, re.DOTALL)
 
     if not topic_match or not content_match:
         raise ValueError("Failed to extract topic or content from response")
@@ -288,7 +295,8 @@ async def clone_article() -> tuple[str, str]:
 
 async def build_think(article: str) -> str:
     thinking, _answer = await aget_response(
-        prompt=prompt_think.format(prompt_example1=article)
+        prompt=prompt_think.format(prompt_example1=article),
+        model="deepseek/deepseek-r1",
     )
     _thinking, answer = await aget_response(
         prompt=prompt_think_fix.format(comment=thinking),
@@ -300,16 +308,35 @@ async def build_think(article: str) -> str:
     return fixed_match.group(1)
 
 
-async def build_pipeline() -> tuple[str, str, str]:
-    topic, content = await clone_article()
+prompt_list = {
+    "prompt1": prompt1,
+    "prompt2": prompt2,
+}
+
+
+async def build_pipeline(
+    model: str, prompt_name: str = "prompt2"
+) -> tuple[str, str, str]:
+    topic, content = await clone_article(model=model, prompt=prompt_list[prompt_name])
     think = await build_think(article=content)
     return topic, think, content
 
 
 if __name__ == "__main__":
     import asyncio
+    from dotenv import load_dotenv
 
-    topic, think, content = asyncio.run(build_pipeline())
+    load_dotenv(override=True, interpolate=True)
+
+    topic, think, content = asyncio.run(
+        build_pipeline(model="anthropic/claude-3.5-sonnet:beta", prompt_name="prompt1")
+        # build_pipeline(model="openai/gpt-4o-2024-11-20", prompt_name="prompt1")
+        # build_pipeline(model="google/gemini-2.0-flash-001", prompt_name="prompt2")
+    )
     print(topic)
     print(think)
     print(content)
+
+    # thinking, answer = get_response(prompt=prompt1, model="google/gemini-2.0-flash-001")
+    # print(thinking)
+    # print(answer)

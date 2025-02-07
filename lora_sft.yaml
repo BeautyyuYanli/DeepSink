@@ -1,4 +1,5 @@
 ### model
+# model_name_or_path: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 model_name_or_path: casperhansen/deepseek-r1-distill-qwen-7b-awq
 trust_remote_code: true
 
@@ -6,7 +7,7 @@ trust_remote_code: true
 stage: sft
 do_train: true
 finetuning_type: lora
-lora_rank: 256
+lora_rank: 128
 lora_target: all
 
 ### dataset
@@ -16,9 +17,9 @@ overwrite_cache: true
 preprocessing_num_workers: 16
 
 ### output
-output_dir: ../output_model/deepsink-250206-3
+output_dir: ../output_model/deepsink-250206-5
 logging_steps: 1
-save_steps: 15
+save_steps: 30
 plot_loss: true
 overwrite_output_dir: true
 
@@ -26,14 +27,14 @@ overwrite_output_dir: true
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 1
 learning_rate: 1.0e-4
-num_train_epochs: 4 
+num_train_epochs: 3
 lr_scheduler_type: cosine
 warmup_ratio: 0.1
 bf16: true
 ddp_timeout: 180000000
 
 ### eval
-# val_size: 0.1
-# per_device_eval_batch_size: 1
-# eval_strategy: steps
-# eval_steps: 500
+val_size: 0.1
+per_device_eval_batch_size: 1
+eval_strategy: steps
+eval_steps: 30

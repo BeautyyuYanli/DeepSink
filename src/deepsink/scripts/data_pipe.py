@@ -35,6 +35,8 @@ def build(
         None,
         help="Directory to save intermediate batches. If None, batches are not saved locally",
     ),
+    model: str = typer.Option("deepseek/deepseek-r1", help="Model to use"),
+    prompt_name: str = typer.Option("prompt2", help="Prompt to use"),
     append: bool = typer.Option(True, help="Whether to append to existing dataset"),
 ):
     """
@@ -54,7 +56,11 @@ def build(
         for i in range(batch_num):
             print(f"Building batch {i}...")
             temp_batch = await asyncio.gather(
-                *[build_pipeline() for _ in range(batch_size)], return_exceptions=True
+                *[
+                    build_pipeline(model, prompt_name=prompt_name)
+                    for _ in range(batch_size)
+                ],
+                return_exceptions=True,
             )
             for item in temp_batch:
                 if isinstance(item, BaseException):
@@ -235,9 +241,8 @@ def to_csv(
 
 @app.command()
 def sync_formatting(
-    repo_name: str = typer.Argument(..., help="Name of the dataset repository"),
-    output_repo_name: None | str = typer.Option(
-        None,
+    repo_name: str = typer.Argument(help="Name of the dataset repository"),
+    output_repo_name: str = typer.Argument(
         help="Name of the output repository. If None, the original repo name with suffix '-alpaca' will be used.",
     ),
 ):
