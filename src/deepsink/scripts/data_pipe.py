@@ -233,5 +233,50 @@ def to_csv(
         console.print(f"Error converting dataset to CSV: {str(e)}", style="bold red")
 
 
+@app.command()
+def sync_formatting(
+    repo_name: str = typer.Argument(..., help="Name of the dataset repository"),
+    output_repo_name: None | str = typer.Option(
+        None,
+        help="Name of the output repository. If None, the original repo name with suffix '-alpaca' will be used.",
+    ),
+):
+    """
+    Transform dataset into Alpaca-style format and create/update the 'alpaca' split.
+    Creates instruction-input-output format from the existing dataset.
+    """
+    output_repo_name = output_repo_name or f"{repo_name}-alpaca"
+    try:
+        dataset: Dataset = load_dataset(repo_name)["train"]  # type: ignore
+        console = Console()
+
+        def format_alpaca_style(example):
+            return {
+                "instruction": "依据给定的主题，写一篇爆仓文学：",
+                "input": example["topic"],
+                "output": f"<think>\n{example['think']}\n</think>\n\n{example['content']}",
+            }
+
+        # Transform the dataset
+        alpaca_dataset = dataset.map(format_alpaca_style)
+        alpaca_dataset = alpaca_dataset.select_columns(
+            ["instruction", "input", "output"]
+        )
+
+        alpaca_dataset.push_to_hub(output_repo_name)
+
+        console.print(
+            f"\nDataset successfully transformed and updated in: {repo_name}/alpaca",
+            style="bold green",
+        )
+        console.print(
+            f"Total entries processed: {len(alpaca_dataset)}", style="bold green"
+        )
+
+    except Exception as e:
+        console = Console()
+        console.print(f"Error transforming dataset: {str(e)}", style="bold red")
+
+
 if __name__ == "__main__":
     app()

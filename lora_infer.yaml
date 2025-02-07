@@ -1,0 +1,6 @@
+# model_name_or_path: ../output_model/deepsink-v1
+model_name_or_path: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+adapter_name_or_path: /home/yanli.yu/DeepSink/output_model/deepsink-v1-adapter
+template: deepseek3
+infer_backend: huggingface  # choices: [huggingface, vllm]
+trust_remote_code: true
